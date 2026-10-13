@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="紅線合緣診斷：輸入男女雙方生日、時辰與血型，從八字、生肖、星座、血型、生命靈數九個面向評出情人合緣指數與相處建議。">
+<meta property="og:title" content="紅線合緣診斷">
+<meta property="og:description" content="男女情人合適度診斷｜八字 × 生肖 × 星座 × 血型 × 生命靈數">
+<style>:root{color-scheme:light}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>紅線合緣診斷</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
+<style>
+/* Layout: 兩張命盤卡片左右並列，中間一條紅線相連；下方為合緣報告（總分環 → 九項分數 → 逐項解析 → 相處建議） */
+:root{
+  --bg:#f6f2f3; --paper:#fffdfd; --ink:#2b1f25; --muted:#76646c; --line:#e5d9dd;
+  --red:#b0142f; --red-soft:#f6dde2; --gold:#a8792b; --he:#2e4f86; --he-soft:#e2e9f5; --she:#b0142f; --she-soft:#f6dde2;
+  --good:#2f7a5b; --warn:#b07a12; --bad:#b0142f;
+  --f-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#171116; --paper:#221a20; --ink:#f1e7ea; --muted:#ab979f; --line:#3a2d34;
+  --red:#ef5a72; --red-soft:#3d1c25; --gold:#d6aa5c; --he:#8fb0ea; --he-soft:#1d2840; --she:#ef5a72; --she-soft:#3d1c25;
+  --good:#5fc394; --warn:#e0b04f; --bad:#ef5a72; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171116; --paper:#221a20; --ink:#f1e7ea; --muted:#ab979f; --line:#3a2d34;
+  --red:#ef5a72; --red-soft:#3d1c25; --gold:#d6aa5c; --he:#8fb0ea; --he-soft:#1d2840; --she:#ef5a72; --she-soft:#3d1c25;
+  --good:#5fc394; --warn:#e0b04f; --bad:#ef5a72; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.7}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:24px 64px}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+h1{font-family:var(--f-display);font-weight:900;font-size:clamp(28px,5vw,42px);margin:0;letter-spacing:.06em;line-height:1.2}
+h1 span{color:var(--red)}
+.sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+nav.tabs{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px}
+nav.tabs button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:14px;padding:6px 14px;border-radius:999px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--red);color:#fff}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.pair{display:grid;grid-template-columns:1fr 56px 1fr;align-items:stretch}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}
+.card.he{border-top:4px solid var(--he)} .card.she{border-top:4px solid var(--she)}
+.card h2{font-family:var(--f-display);font-size:20px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.card.he h2 .dot{background:var(--he)} .card.she h2 .dot{background:var(--she)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.thread{position:relative;display:flex;align-items:center;justify-content:center}
+.thread svg{width:56px;height:100%;min-height:120px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.row label.k{width:64px;color:var(--muted);font-size:13px;flex:none}
+select,input[type=text]{font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+input[type=text]{flex:1;min-width:120px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--bg);color:var(--muted);font:inherit;font-size:13px;padding:5px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.chk{font-size:13px;color:var(--muted);display:inline-flex;gap:4px;align-items:center}
+.preview{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted)}
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px;text-align:center}
+.pillar{border:1px solid var(--line);border-radius:8px;padding:4px 0;background:var(--bg)}
+.pillar small{display:block;font-size:11px;color:var(--muted)}
+.pillar b{font-family:var(--f-display);font-size:20px;letter-spacing:.1em;color:var(--ink);display:block;line-height:1.3}
+.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:22px 0 8px}
+.btn{font:inherit;font-weight:700;border-radius:999px;padding:10px 26px;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.btn.primary{background:var(--red);color:#fff;border-color:var(--red);font-size:16px;padding:12px 36px;letter-spacing:.15em}
+.btn.small{padding:6px 14px;font-size:13px;font-weight:500}
+.note{font-size:12px;color:var(--muted);text-align:center}
+
+#report{margin-top:28px}
+.summary{display:grid;grid-template-columns:240px 1fr;gap:24px;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:22px;align-items:center}
+.ring{position:relative;width:200px;height:200px;margin:auto}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .num b{font-family:var(--f-display);font-size:54px;line-height:1;font-variant-numeric:tabular-nums}
+.ring .num small{color:var(--muted);font-size:12px;letter-spacing:.2em}
+.verdict{font-family:var(--f-display);font-size:28px;font-weight:900;margin:0;letter-spacing:.08em}
+.couple{color:var(--muted);font-size:14px;margin:2px 0 10px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.tag{font-size:12px;padding:2px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg)}
+.tag.g{color:var(--good);border-color:currentColor} .tag.w{color:var(--warn);border-color:currentColor} .tag.b{color:var(--bad);border-color:currentColor}
+.bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 28px;margin-top:20px;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:20px}
+.bar{display:grid;grid-template-columns:92px 1fr 36px;gap:10px;align-items:center;font-size:14px}
+.bar .track{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar .fill{height:100%;border-radius:4px;background:var(--red)}
+.bar .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.bar .w{font-size:11px;color:var(--muted)}
+.sec-title{font-family:var(--f-display);font-size:22px;margin:30px 0 12px;display:flex;align-items:baseline;gap:10px}
+.sec-title small{font-family:var(--f-body);font-size:13px;color:var(--muted);font-weight:400}
+.items{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.item{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.item h3{margin:0 0 4px;font-size:16px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.item h3 .sc{font-variant-numeric:tabular-nums;font-size:14px}
+.item .rel{font-family:var(--f-display);font-size:15px;color:var(--gold);margin-bottom:6px}
+.item p{margin:0;font-size:14px;color:var(--ink)}
+.wx{display:grid;grid-template-columns:auto repeat(5,1fr);gap:4px 6px;font-size:13px;align-items:center;margin:8px 0}
+.wx .h{color:var(--muted);text-align:center;font-size:12px}
+.wx .c{text-align:center;font-variant-numeric:tabular-nums;border-radius:6px;padding:2px 0;background:var(--bg)}
+.wx .c.zero{color:var(--bad);font-weight:700}
+.advice{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:20px}
+.advice ul{margin:0;padding-left:1.2em}
+.advice li{margin:6px 0}
+.lucky{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+.lucky div{border:1px solid var(--line);border-radius:10px;padding:8px 14px;background:var(--bg);font-size:13px}
+.lucky b{display:block;font-family:var(--f-display);font-size:17px}
+.sample{display:inline-block;font-size:12px;color:var(--gold);border:1px solid currentColor;border-radius:4px;padding:0 6px;margin-left:6px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:20px}
+.rec{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.rec:last-child{border-bottom:0}
+.rec .meta{font-size:13px;color:var(--muted)}
+.conv-out{margin-top:14px;font-size:16px;font-family:var(--f-display)}
+.disclaimer{margin-top:36px;font-size:12px;color:var(--muted);text-align:center}
+@media (max-width:760px){
+  .pair{grid-template-columns:1fr}
+  .thread{height:40px}.thread svg{transform:rotate(90deg);min-height:0;height:56px}
+  .summary{grid-template-columns:1fr;text-align:center}.tags{justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.fill,.ringfg{transition:all .8s ease}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>紅線<span>合緣</span>診斷</h1>
+      <p class="sub">男女情人合適度 · 八字 × 生肖 × 星座 × 血型 × 生命靈數 九項綜合評分</p>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="diag">合緣診斷</button>
+      <button role="tab" aria-selected="false" data-tab="conv">農曆換算</button>
+      <button role="tab" aria-selected="false" data-tab="recs">保存記錄</button>
+    </nav>
+  </header>
+
+  <section id="tab-diag">
+    <div class="pair">
+      <div class="card he" id="card-m"></div>
+      <div class="thread" aria-hidden="true">
+        <svg viewBox="0 0 56 200" preserveAspectRatio="none"><path d="M0 100 C 18 60, 38 140, 56 100" stroke="var(--red)" stroke-width="2.5" fill="none"/><circle cx="28" cy="100" r="5" fill="var(--red)"/></svg>
+      </div>
+      <div class="card she" id="card-f"></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="go">開始診斷</button>
+      <button class="btn" id="save">保存記錄</button>
+    </div>
+    <p class="note" id="msg">八字以節氣定年月（立春換年），23 點後的晚子時日柱仍算當日。</p>
+    <div id="report"></div>
+  </section>
+
+  <section id="tab-conv" hidden>
+    <div class="panel">
+      <h2 style="font-family:var(--f-display);margin-top:0">國曆 ⇄ 農曆換算</h2>
+      <div class="row"><label class="k">換算方向</label>
+        <div class="seg" id="conv-dir"><button aria-pressed="true" data-v="s2l">國曆→農曆</button><button aria-pressed="false" data-v="l2s">農曆→國曆</button></div></div>
+      <div class="row"><label class="k">日期</label>
+        <select id="cv-y"></select>年<select id="cv-m"></select>月<select id="cv-d"></select>日
+        <label class="chk" id="cv-leap-wrap" hidden><input type="checkbox" id="cv-leap">閏月</label>
+        <button class="btn small" id="cv-go">換算</button></div>
+      <div class="conv-out" id="cv-out"></div>
+    </div>
+  </section>
+
+  <section id="tab-recs" hidden>
+    <div class="panel"><div id="rec-list"></div></div>
+  </section>
+
+  <p class="disclaimer">本診斷依傳統命理與民俗配對規則計算，僅供參考與娛樂。感情的長久，靠的是兩人的溝通與經營。</p>
+</div>
+
+<script>
+(function(){
+const L = window.Solar ? {Solar:window.Solar, Lunar:window.Lunar} : null;
+const $ = s=>document.querySelector(s);
+const GAN="甲乙丙丁戊己庚辛壬癸", ZHI="子丑寅卯辰巳午未申酉戌亥";
+const SX="鼠牛虎兔龍蛇馬羊猴雞狗豬";
+const GWX={甲:"木",乙:"木",丙:"火",丁:"火",戊:"土",己:"土",庚:"金",辛:"金",壬:"水",癸:"水"};
+const ZWX={子:"水",丑:"土",寅:"木",卯:"木",辰:"土",巳:"火",午:"火",未:"土",申:"金",酉:"金",戌:"土",亥:"水"};
+const WX=["木","火","土","金","水"];
+const SHENG={木:"火",火:"土",土:"金",金:"水",水:"木"}, KE={木:"土",土:"水",水:"火",火:"金",金:"木"};
+const WXCOLOR={木:"綠色、青色",火:"紅色、紫色",土:"黃色、咖啡色",金:"白色、金色",水:"黑色、藍色"};
+const WXDIR={木:"東方",火:"南方",土:"中央",金:"西方",水:"北方"};
+const WXDATE={木:"植物園、森林步道",火:"看夕陽、燭光晚餐",土:"陶藝、山間小旅行",金:"音樂會、看展",水:"海邊、湖畔散步"};
+const LMN=["正","二","三","四","五","六","七","八","九","十","冬","臘"];
+const LDN=d=>{const a=["初","十","廿","三"],n=["十","一","二","三","四","五","六","七","八","九"];if(d===10)return"初十";if(d===20)return"二十";if(d===30)return"三十";return a[Math.floor(d/10)]+n[d%10]};
+
+/* ---------- 輸入表單 ---------- */
+function opts(a,b,sel,fmt){let h="";for(let i=a;i<=b;i++)h+=`<option value="${i}"${i===sel?" selected":""}>${fmt?fmt(i):i}</option>`;return h}
+function buildCard(id,who,def){
+  const el=$("#card-"+id), p=id;
+  el.innerHTML=`<h2><span class="dot"></span>${who}<span class="sample" id="${p}-sample">範例</span></h2>
+  <div class="row"><label class="k" for="${p}-name">姓名</label><input type="text" id="${p}-name" value="${def.name}" placeholder="可不填"></div>
+  <div class="row"><label class="k">曆法</label><div class="seg" id="${p}-cal"><button aria-pressed="true" data-v="s">國曆</button><button aria-pressed="false" data-v="l">農曆</button></div>
+    <label class="chk" id="${p}-leap-wrap" hidden><input type="checkbox" id="${p}-leap">閏月</label></div>
+  <div class="row"><label class="k">出生日期</label><select id="${p}-y">${opts(1921,2060,def.y)}</select>年<select id="${p}-m">${opts(1,12,def.m)}</select>月<select id="${p}-d">${opts(1,31,def.d)}</select>日</div>
+  <div class="row"><label class="k">出生時間</label><select id="${p}-h"><option value="-1">不詳</option>${opts(0,23,def.h,i=>String(i).padStart(2,"0"))}</select>時<select id="${p}-mi">${opts(0,59,def.mi,i=>String(i).padStart(2,"0"))}</select>分</div>
+  <div class="row"><label class="k" for="${p}-blood">血型</label><select id="${p}-blood"><option value="">不詳</option>${["A","B","AB","O"].map(b=>`<option${b===def.blood?" selected":""}>${b}</option>`).join("")}</select></div>
+  <div class="preview" id="${p}-pv"></div>`;
+  el.querySelectorAll(`#${p}-cal button`).forEach(b=>b.onclick=()=>{el.querySelectorAll(`#${p}-cal button`).forEach(x=>x.setAttribute("aria-pressed",x===b));$(`#${p}-leap-wrap`).hidden=b.dataset.v!=="l";preview(p)});
+  el.addEventListener("input",()=>{$(`#${p}-sample`).hidden=true;preview(p)});
+  el.addEventListener("change",()=>{$(`#${p}-sample`).hidden=true;preview(p)});
+}
+function readForm(p){
+  return {name:$(`#${p}-name`).value.trim(),cal:document.querySelector(`#${p}-cal button[aria-pressed="true"]`).dataset.v,leap:$(`#${p}-leap`).checked,
+    y:+$(`#${p}-y`).value,m:+$(`#${p}-m`).value,d:+$(`#${p}-d`).value,h:+$(`#${p}-h`).value,mi:+$(`#${p}-mi`).value,blood:$(`#${p}-blood`).value};
+}
+function writeForm(p,f){
+  $(`#${p}-name`).value=f.name||"";$(`#${p}-y`).value=f.y;$(`#${p}-m`).value=f.m;$(`#${p}-d`).value=f.d;$(`#${p}-h`).value=f.h;$(`#${p}-mi`).value=f.mi;$(`#${p}-blood`).value=f.blood||"";
+  document.querySelectorAll(`#${p}-cal button`).forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===(f.cal||"s")));
+  $(`#${p}-leap-wrap`).hidden=f.cal!=="l";$(`#${p}-leap`).checked=!!f.leap;$(`#${p}-sample`).hidden=true;preview(p);
+}
+
+/* ---------- 命盤計算 ---------- */
+function chart(f){
+  let solar;
+  const hh=f.h<0?12:f.h, mm=f.h<0?0:f.mi;
+  if(f.cal==="l"){
+    let lu;try{lu=L.Lunar.fromYmdHms(f.y,f.leap?-f.m:f.m,f.d,hh,mm,0)}catch(e){throw new Error("這個農曆日期不存在（該年可能沒有這個閏月，或該月只有 29 天）。")}
+    solar=lu.getSolar();
+    if(f.leap && lu.getMonth()>0) throw new Error(`農曆 ${f.y} 年沒有閏${LMN[f.m-1]}月`);
+  }else{
+    const t=new Date(f.y,f.m-1,f.d); if(t.getMonth()!==f.m-1) throw new Error(`國曆 ${f.y}/${f.m} 沒有 ${f.d} 日`);
+    solar=L.Solar.fromYmdHms(f.y,f.m,f.d,hh,mm,0);
+  }
+  const lu=solar.getLunar(), ec=lu.getEightChar();
+  const P=[ec.getYear(),ec.getMonth(),ec.getDay()]; if(f.h>=0)P.push(ec.getTime());
+  const cnt={木:0,火:0,土:0,金:0,水:0}; P.forEach(g=>{cnt[GWX[g[0]]]++;cnt[ZWX[g[1]]]++});
+  const lm=lu.getMonth();
+  const sy=solar.getYear(), sm=solar.getMonth(), sd=solar.getDay();
+  const lp=lifePath(sy,sm,sd);
+  return {f,P,cnt,dayGan:P[2][0],dayZhi:P[2][1],yearZhi:P[0][1],sx:SX[ZHI.indexOf(P[0][1])],
+    nayin:toTrad(ec.getYearNaYin()), solarStr:`${sy}年${sm}月${sd}日`,
+    lunarStr:`農曆 ${P[0]}年 ${lm<0?"閏":""}${LMN[Math.abs(lm)-1]}月${LDN(lu.getDay())}`,
+    star:starSign(sm,sd), lp};
+}
+const T2={"炉":"爐","剑":"劍","头":"頭","涧":"澗","蜡":"蠟","杨":"楊","雳":"靂","长":"長","灯":"燈","驿":"驛","钗":"釵","钏":"釧"};
+function toTrad(x){return [...x].map(c=>T2[c]||c).join("")}
+function lifePath(y,m,d){let s=String(y)+m+d,n=[...s].reduce((a,c)=>a+ +c,0);while(n>9)n=[...String(n)].reduce((a,c)=>a+ +c,0);return n}
+const STARS=[["摩羯",1,19],["水瓶",2,18],["雙魚",3,20],["牡羊",4,19],["金牛",5,20],["雙子",6,21],["巨蟹",7,22],["獅子",8,22],["處女",9,22],["天秤",10,23],["天蠍",11,22],["射手",12,21],["摩羯",12,31]];
+function starSign(m,d){for(const [n,mm,dd] of STARS){if(m<mm||(m===mm&&d<=dd))return n}return"摩羯"}
+const STAR_ORDER=["牡羊","金牛","雙子","巨蟹","獅子","處女","天秤","天蠍","射手","摩羯","水瓶","雙魚"];
+const STAR_EL=["火","土","風","水"];
+
+function preview(p){
+  const pv=$(`#${p}-pv`);
+  try{const c=chart(readForm(p));
+    const labels=["年柱","月柱","日柱","時柱"];
+    pv.innerHTML=`${c.solarStr} · ${c.lunarStr} · 生肖${c.sx} · ${c.star}座
+    <div class="pillars">${labels.map((l,i)=>`<div class="pillar"><small>${l}</small><b>${c.P[i]||"－"}</b></div>`).join("")}</div>`;
+  }catch(e){pv.textContent=e.message}
+}
+
+/* ---------- 配對規則 ---------- */
+const pairIn=(list,a,b)=>list.some(s=>(s[0]===a&&s[1]===b)||(s[0]===b&&s[1]===a));
+const LIUHE=["子丑","寅亥","卯戌","辰酉","巳申","午未"], CHONG=["子午","丑未","寅申","卯酉","辰戌","巳亥"],
+      HAI=["子未","丑午","寅巳","卯辰","申亥","酉戌"], PO=["子酉","卯午","辰丑","未戌"], XING=["寅巳","巳申","寅申","丑戌","戌未","丑未","子卯"],
+      SANHE=["申子辰","亥卯未","寅午戌","巳酉丑"], ZIXING="辰午酉亥";
+function zhiRel(a,b){
+  if(a===b) return ZIXING.includes(a)?{n:"自刑",s:55}:{n:"同支比和",s:72};
+  if(pairIn(LIUHE,a,b)) return {n:"六合",s:96};
+  if(SANHE.some(g=>g.includes(a)&&g.includes(b))) return {n:"三合",s:90};
+  if(pairIn(CHONG,a,b)) return {n:"六沖",s:32};
+  if(pairIn(XING,a,b)) return {n:"相刑",s:42};
+  if(pairIn(HAI,a,b)) return {n:"六害",s:46};
+  if(pairIn(PO,a,b)) return {n:"相破",s:58};
+  return {n:"無刑沖合害",s:70};
+}
+const GANHE=["甲己","乙庚","丙辛","丁壬","戊癸"], GANHE_WX={甲己:"土",乙庚:"金",丙辛:"水",丁壬:"木",戊癸:"火"};
+function wxRel(a,b){ // a 對 b
+  if(a===b) return "同";
+  if(SHENG[a]===b) return "生"; if(SHENG[b]===a) return "被生";
+  if(KE[a]===b) return "剋"; return "被剋";
+}
+const BLOOD={ // [男][女]
+  O:{O:[80,"兩人都直率有主見，熱情相投，但都想當主導者，需輪流讓步。"],A:[90,"O 型男的果斷給了 A 型女安全感，A 型女的細心照顧讓他安定，經典互補組合。"],B:[70,"B 型女自由奔放，O 型男欣賞她的活力，但要接受她不愛被管。"],AB:[62,"AB 型女的理性與疏離，對熱情的 O 型男是謎題，需多耐心理解。"]},
+  A:{O:[86,"O 型女爽朗大方，能化解 A 型男的多慮，相處輕鬆愉快。"],A:[80,"價值觀相近、彼此體貼，但兩人都容易悶在心裡，要練習說出口。"],B:[52,"A 型男重規矩，B 型女隨性，生活步調差很多，需大量包容。"],AB:[76,"同樣重視理性與分寸，AB 型女的冷靜與 A 型男的穩重很合拍。"]},
+  B:{O:[85,"O 型女能包容 B 型男的隨興，他也欣賞她的直爽，彼此不設防。"],A:[55,"A 型女細膩敏感，B 型男的不拘小節容易讓她受傷，要多留意對方感受。"],B:[75,"玩得來、聊得來，像好朋友般的情侶，但生活瑣事需要有人扛。"],AB:[80,"B 型男的熱情與 AB 型女的靈巧互相吸引，常有新鮮感。"]},
+  AB:{O:[62,"O 型女的直接有時讓 AB 型男招架不住，要給彼此適度空間。"],A:[82,"A 型女的溫柔體貼，最能讓 AB 型男卸下心防，相處穩定。"],B:[80,"兩人都有創意、喜歡新鮮事，在一起不無聊。"],AB:[85,"心靈契合度高，懂彼此的雙重個性，是知己型伴侶。"]}
+};
+const LP_GROUP={1:"A",5:"A",7:"A",2:"B",4:"B",8:"B",3:"C",6:"C",9:"C"};
+const LP_TRAIT={1:"領導、獨立",2:"溫和、合作",3:"創意、表達",4:"務實、穩定",5:"自由、冒險",6:"顧家、責任",7:"思考、內省",8:"企圖、成就",9:"博愛、理想"};
+const LP_BAD=["1-8","4-5","1-1","8-8","5-6","4-9"];
+
+function scoreAll(M,F){
+  const R=[];
+  // 1 生肖
+  const r1=zhiRel(M.yearZhi,F.yearZhi);
+  const t1={六合:"生肖六合，屬於最傳統的「上等婚配」，彼此天生有好感，家人也容易支持這段感情。",三合:"生肖三合，志趣相投、目標一致，能一起打拚，是互相成就的組合。",六沖:"生肖相沖，個性與生活習慣差異大，容易一言不合。沖也代表強烈吸引，學會讓步就能化沖為動力。",相刑:"生肖相刑，相處中容易出現言語上的刺傷或互相挑剔，需刻意多說好話。",六害:"生肖六害，容易因第三方（家人、朋友）或誤會產生嫌隙，凡事要直接溝通。",相破:"生肖相破，感情中偶有小摩擦與計畫被打亂，問題不大，但要有耐心。",自刑:"同生肖且帶自刑，兩人太像，會放大彼此的缺點，需要各自保留空間。",同支比和:"同生肖，個性相似、默契自然，但容易互不相讓。",無刑沖合害:"生肖之間沒有刑沖合害，關係平穩，感情好壞取決於後天經營。"};
+  R.push({k:"生肖緣分",w:14,s:r1.s,rel:`屬${M.sx} × 屬${F.sx}｜${r1.n}`,t:t1[r1.n]});
+  // 2 日主天干
+  const a=M.dayGan,b=F.dayGan,ea=GWX[a],eb=GWX[b];let s2,n2,t2;
+  if(GANHE.includes(a+b)||GANHE.includes(b+a)){const k=GANHE.includes(a+b)?a+b:b+a;s2=98;n2=`${a}${b}天干五合（合化${GANHE_WX[k]}）`;t2="日主天干五合，命理上最看重的「夫妻正合」，兩人心意相通，一見面就有說不出的熟悉感。";}
+  else{const r=wxRel(ea,eb);n2=`${a}${ea} ${({同:"比和",生:"生",被生:"被生於",剋:"剋",被剋:"被剋於"})[r]} ${b}${eb}`;
+    ({同:()=>{s2=74;t2="兩人日主五行相同，想法接近、像朋友也像戰友，但都有自己的堅持。"},
+      生:()=>{s2=86;t2="男方日主生女方，他願意付出、照顧她，女方被寵愛，關係溫暖。"},
+      被生:()=>{s2=84;t2="女方日主生男方，她像賢內助一樣支持他，男方要記得回饋與感謝。"},
+      剋:()=>{s2=64;t2="男方日主剋女方，傳統上屬「夫剋妻為正」，他較有主導權，但要避免太強勢。"},
+      被剋:()=>{s2=50;t2="女方日主剋男方，女強男弱的格局，女方個性較主導，男方可能感到壓力，需互相尊重。"}})[r]();}
+  R.push({k:"日主相合",w:16,s:s2,rel:n2,t:t2});
+  // 3 夫妻宮
+  const r3=zhiRel(M.dayZhi,F.dayZhi);
+  const t3={六合:"夫妻宮六合，婚後生活甜蜜，家是兩人共同的避風港。",三合:"夫妻宮三合，生活步調一致，同居或婚後容易適應彼此。",六沖:"夫妻宮相沖，是婚姻最需注意的訊號：作息、金錢觀、家務分工最好婚前先談清楚。",相刑:"夫妻宮相刑，容易在小事上較真，建議約定「吵架不過夜」。",六害:"夫妻宮六害，容易累積未說出口的不滿，需定期好好聊心事。",相破:"夫妻宮相破，生活中有小摩擦，多一點彈性就能化解。",自刑:"夫妻宮自刑，兩人都容易鑽牛角尖，各自保有興趣與空間很重要。",同支比和:"夫妻宮相同，生活習慣相似，相處自在。",無刑沖合害:"夫妻宮平和，沒有明顯衝突，婚姻品質看兩人用心程度。"};
+  R.push({k:"夫妻宮",w:15,s:r3.s,rel:`日支 ${M.dayZhi} × ${F.dayZhi}｜${r3.n}`,t:t3[r3.n]});
+  // 4 五行互補
+  const lackM=WX.filter(e=>M.cnt[e]===0), lackF=WX.filter(e=>F.cnt[e]===0);
+  const weakM=lackM.length?lackM:WX.filter(e=>M.cnt[e]===Math.min(...WX.map(x=>M.cnt[x])));
+  const weakF=lackF.length?lackF:WX.filter(e=>F.cnt[e]===Math.min(...WX.map(x=>F.cnt[x])));
+  const fill=(weak,other)=>weak.reduce((s,e)=>s+Math.min(other.cnt[e],2)/2,0)/weak.length;
+  const fm=fill(weakM,F), ff=fill(weakF,M);
+  const comb=WX.map(e=>M.cnt[e]+F.cnt[e]); const missingComb=WX.filter((e,i)=>comb[i]===0);
+  let s4=Math.round(45+25*fm+25*ff-(missingComb.length*8)+ (missingComb.length===0?5:0)); s4=Math.max(30,Math.min(98,s4));
+  const fmt=w=>w.join("、");
+  let t4=`男方較弱的五行為「${fmt(weakM)}」，女方${fm>=0.75?"正好帶得多，能補足他":fm>0?"略能補足":"同樣不足，無法補足"}；女方較弱的五行為「${fmt(weakF)}」，男方${ff>=0.75?"正好可以補足她":ff>0?"略能補足":"也欠缺"}。`;
+  t4+=missingComb.length?`兩人合起來仍缺「${fmt(missingComb)}」，可用顏色、居家佈置來補。`:"兩人合起來五行俱全，屬互補型的好組合。";
+  R.push({k:"五行互補",w:15,s:s4,rel:`缺弱：男 ${fmt(weakM)}｜女 ${fmt(weakF)}`,t:t4,wx:true});
+  // 5 夫妻星
+  const rel5=wxRel(ea,eb); const herGuan=M.P.length&&F.P.reduce((s,g)=>s+(GWX[g[0]]===ea?1:0)+(ZWX[g[1]]===ea?1:0),0);
+  const hisCai=M.P.reduce((s,g)=>s+(GWX[g[0]]===eb?1:0)+(ZWX[g[1]]===eb?1:0),0);
+  let s5={剋:90,生:78,被生:76,同:68,被剋:52}[rel5]; s5+=Math.min(herGuan,3)*2+Math.min(hisCai,3)*2; s5=Math.min(98,s5);
+  const t5base={剋:"男方的日主正是女方命中的「夫星」，女方也是男方命中的「妻星」，彼此命盤互相認定，屬標準的夫妻配。",生:"男方是女方的「印星」，他像長輩般包容照顧她；感情偏向疼愛型。",被生:"女方是男方的「印星」，她給予他溫柔支持；感情偏向照顧型，男方要多主動。",同:"兩人日主同為比劫，像夥伴、像兄妹，友情基礎深厚，愛情需多製造浪漫。",被剋:"女方日主剋男方，在命理上是「妻剋夫」之象，女方能量較強，雙方要避免權力拉扯。"}[rel5];
+  R.push({k:"夫妻星",w:10,s:s5,rel:`女命夫星現 ${herGuan} 處｜男命妻星現 ${hisCai} 處`,t:t5base+(herGuan>=2?" 女方八字中男方的五行出現多次，對他特別有感覺。":"")+(hisCai>=2?" 男方八字中女方的五行旺，他很容易被她吸引。":"")});
+  // 6 納音
+  const na=M.nayin.slice(-1), nb=F.nayin.slice(-1), r6=wxRel(na,nb);
+  const s6={同:78,生:86,被生:86,剋:56,被剋:56}[r6];
+  R.push({k:"納音五行",w:6,s:s6,rel:`${M.nayin}（${na}） × ${F.nayin}（${nb}）`,t:{同:"年命納音同屬一行，家庭背景與價值觀相近。",生:"男命納音生女命，男方家庭對女方較為照顧。",被生:"女命納音生男命，女方能旺夫、帶來助力。",剋:"男命納音剋女命，女方初入男方家庭時需要較多適應。",被剋:"女命納音剋男方，男方需多尊重女方的想法與原生家庭。"}[r6]});
+  // 7 星座
+  const ia=STAR_ORDER.indexOf(M.star), ib=STAR_ORDER.indexOf(F.star), xa=STAR_EL[ia%4], xb=STAR_EL[ib%4];
+  const diff=Math.abs(ia-ib), dd=Math.min(diff,12-diff); let s7,t7;
+  if(dd===0){s7=80;t7="同星座，相同的興趣與思考方式讓你們很快熟悉，但缺點也一模一樣。"}
+  else if(dd===6){s7=76;t7="對宮星座，互補又互相吸引，像鏡子一樣照出彼此缺少的部分。"}
+  else if(xa===xb){s7=90;t7=`同屬${xa}象星座，溝通頻率一致，很容易產生共鳴。`}
+  else{const k=[xa,xb].sort().join("");s7={"火風":88,"土水":88,"土火":60,"水火":48,"土風":55,"水風":60}[k]||62;
+    t7={"火風":"火象與風象，風助火勢，熱情與點子不斷，在一起很有活力。","土水":"土象與水象，水潤澤土，穩定又溫柔，是能細水長流的組合。","土火":"火象衝、土象穩，一個想出發一個想規劃，要協調節奏。","水火":"水火性格反差大，感性與衝勁容易碰撞，需要更多同理心。","土風":"土象重實際、風象重想法，要找到共同的生活目標。","水風":"水象重感覺、風象重邏輯，表達愛的方式不同，要學對方的語言。"}[k]||"";}
+  R.push({k:"星座配對",w:9,s:s7,rel:`${M.star}座（${xa}象） × ${F.star}座（${xb}象）`,t:t7});
+  // 8 血型
+  if(M.f.blood&&F.f.blood){const [s8,t8]=BLOOD[M.f.blood][F.f.blood];R.push({k:"血型配對",w:8,s:s8,rel:`男 ${M.f.blood} 型 × 女 ${F.f.blood} 型`,t:t8});}
+  else R.push({k:"血型配對",w:8,s:null,rel:"血型不詳",t:"填入雙方血型後可加入此項評分。"});
+  // 9 生命靈數
+  const x=M.lp,y=F.lp,key=[x,y].sort().join("-"); let s9,t9;
+  if(LP_BAD.includes(key)){s9=52;t9="靈數組合張力大，彼此人生節奏不同，需要更多理解與退讓。"}
+  else if(x===y){s9=78;t9="同一靈數，懂得彼此的動機與堅持，是心意相通的組合。"}
+  else if(LP_GROUP[x]===LP_GROUP[y]){s9=90;t9="靈數同屬一個和諧群組，人生目標方向一致，相處自然。"}
+  else{s9=68;t9="靈數各有所長，若能欣賞彼此差異，就能互補成長。"}
+  R.push({k:"生命靈數",w:7,s:s9,rel:`${x}號（${LP_TRAIT[x]}） × ${y}號（${LP_TRAIT[y]}）`,t:t9});
+  const used=R.filter(r=>r.s!=null), tw=used.reduce((s,r)=>s+r.w,0);
+  const total=Math.round(used.reduce((s,r)=>s+r.s*r.w,0)/tw);
+  return {R,total,missingComb,weakM,weakF};
+}
+function verdict(t){
+  if(t>=88)return["天作之合","g","命中注定的好緣分，彼此互相成就，宜把握良緣。"];
+  if(t>=78)return["良緣佳偶","g","整體相合度高，相處融洽，是值得長久經營的伴侶。"];
+  if(t>=68)return["用心可長久","w","有合有沖、優缺點並存，願意溝通與包容，就能走得長遠。"];
+  if(t>=58)return["磨合期較長","w","差異不小，需要時間適應彼此，建議交往久一點再談婚嫁。"];
+  return["需多包容","b","先天配合度較低，感情較辛苦，更需雙方真心與耐心經營。"];
+}
+const cls=s=>s>=80?"g":s>=62?"w":"b";
+const colorOf=s=>s>=80?"var(--good)":s>=62?"var(--warn)":"var(--bad)";
+
+/* ---------- 報告 ---------- */
+let last=null;
+function run(){
+  const msg=$("#msg");
+  if(!L){msg.textContent="曆法程式庫載入失敗，請重新整理頁面。";return}
+  let M,F;
+  try{M=chart(readForm("m"));F=chart(readForm("f"))}catch(e){msg.textContent=e.message;return}
+  const S=scoreAll(M,F); last={m:readForm("m"),f:readForm("f"),total:S.total};
+  const [vt,vc,vd]=verdict(S.total);
+  const nm=M.f.name||"男方", nf=F.f.name||"女方";
+  const C=2*Math.PI*86, off=C*(1-S.total/100);
+  const good=S.R.filter(r=>r.s!=null&&r.s>=85).map(r=>r.k), bad=S.R.filter(r=>r.s!=null&&r.s<60).map(r=>r.k);
+  const sorted=S.R.filter(r=>r.s!=null).sort((a,b)=>a.s-b.s);
+  const lackAll=S.missingComb.length?S.missingComb:[...new Set([...S.weakM,...S.weakF])].slice(0,2);
+  const tips=[];
+  sorted.slice(0,3).forEach(r=>{tips.push({
+    生肖緣分:"生肖不合時，節慶多一起陪伴雙方家人，讓長輩看見你們的用心。",
+    日主相合:"日主不合的伴侶，吵架時先處理情緒再處理事情，給對方台階下。",
+    夫妻宮:"夫妻宮有沖刑，婚前先談好居住、家務、財務分配，比婚後磨合容易。",
+    五行互補:`兩人五行偏弱在「${lackAll.join("、")}」，約會與佈置可多用${lackAll.map(e=>WXCOLOR[e]).join("、")}。`,
+    夫妻星:"夫妻星不顯時，愛要說出口：固定的約會日、紀念日儀式能加深連結。",
+    納音五行:"納音相剋多與原生家庭有關，彼此尊重對方家人的習慣，少比較。",
+    星座配對:"星座元素不同，表達愛的方式就不同，試著問對方「你希望我怎麼做」。",
+    血型配對:"血型差異反映在生活步調，約定好各自的獨處時間，彼此都能喘口氣。",
+    生命靈數:"靈數衝突代表人生目標不同，一起寫下三年內的共同目標，找出交集。"}[r.k])});
+  tips.push(S.total>=78?"緣分基礎好，更要避免把對方的好視為理所當然，常說謝謝。":"任何配對都不是定局，命理呈現的是傾向，真正決定感情的是兩人的選擇。");
+  const wxTable=p=>`<div class="wx"><span></span>${WX.map(e=>`<span class="h">${e}</span>`).join("")}
+    <span class="h">男</span>${WX.map(e=>`<span class="c${M.cnt[e]===0?" zero":""}">${M.cnt[e]}</span>`).join("")}
+    <span class="h">女</span>${WX.map(e=>`<span class="c${F.cnt[e]===0?" zero":""}">${F.cnt[e]}</span>`).join("")}</div>`;
+  $("#report").innerHTML=`
+  <div class="summary">
+    <div class="ring"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="86" stroke="var(--line)" stroke-width="14" fill="none"/>
+      <circle class="ringfg" cx="100" cy="100" r="86" stroke="${colorOf(S.total)}" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}"/></svg>
+      <div class="num"><b>${S.total}</b><small>合緣指數</small></div></div>
+    <div>
+      <p class="verdict" style="color:${colorOf(S.total)}">${vt}</p>
+      <p class="couple"><b style="color:var(--he)">${esc(nm)}</b>（${M.solarStr}・屬${M.sx}・${M.star}座${M.f.blood?"・"+M.f.blood+"型":""}）× <b style="color:var(--she)">${esc(nf)}</b>（${F.solarStr}・屬${F.sx}・${F.star}座${F.f.blood?"・"+F.f.blood+"型":""}）</p>
+      <p style="margin:0">${vd}</p>
+      <div class="tags">${good.map(k=>`<span class="tag g">優勢・${k}</span>`).join("")}${bad.map(k=>`<span class="tag b">留意・${k}</span>`).join("")}</div>
+    </div>
+  </div>
+  <div class="bars">${S.R.map(r=>`<div class="bar"><span>${r.k} <span class="w">×${r.w}</span></span><div class="track"><div class="fill" style="width:${r.s??0}%;background:${r.s==null?"var(--line)":colorOf(r.s)}"></div></div><span class="v">${r.s??"－"}</span></div>`).join("")}</div>
+  <h2 class="sec-title">逐項解析 <small>分數 × 權重加總為合緣指數</small></h2>
+  <div class="items">${S.R.map(r=>`<div class="item"><h3>${r.k}<span class="sc" style="color:${r.s==null?"var(--muted)":colorOf(r.s)}">${r.s??"－"} 分</span></h3>
+    <div class="rel">${r.rel}</div>${r.wx?wxTable():""}<p>${r.t}</p></div>`).join("")}</div>
+  <h2 class="sec-title">相處建議</h2>
+  <div class="advice"><ul>${tips.map(t=>`<li>${t}</li>`).join("")}</ul>
+    <div class="lucky">
+      <div>增進感情色<b>${lackAll.map(e=>WXCOLOR[e].split("、")[0]).join("、")}</b></div>
+      <div>旺緣方位<b>${lackAll.map(e=>WXDIR[e]).join("、")}</b></div>
+      <div>推薦約會<b>${WXDATE[lackAll[0]]}</b></div>
+    </div></div>`;
+  msg.textContent="診斷完成。可按「保存記錄」存下這組配對。";
+  $("#report").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
+}
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c])}
+
+/* ---------- 保存記錄 ---------- */
+const KEY="hongxian-records";
+function loadRecs(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return[]}}
+function saveRecs(a){try{localStorage.setItem(KEY,JSON.stringify(a));return true}catch(e){return false}}
+let pendingDel=null;
+function renderRecs(){
+  const a=loadRecs(), el=$("#rec-list");
+  if(!a.length){el.innerHTML=`<p style="margin:0;color:var(--muted)">還沒有保存的配對。完成診斷後按「保存記錄」，就能在這裡快速載入。記錄只存在這台裝置的瀏覽器中。</p>`;return}
+  el.innerHTML=a.map((r,i)=>`<div class="rec"><div><b>${esc(r.m.name||"男方")} × ${esc(r.f.name||"女方")}</b>${r.total!=null?` <span class="tag ${cls(r.total)}">${r.total} 分</span>`:""}
+    <div class="meta">${r.m.cal==="l"?"農":"國"} ${r.m.y}/${r.m.m}/${r.m.d} · ${r.f.cal==="l"?"農":"國"} ${r.f.y}/${r.f.m}/${r.f.d} · 存於 ${r.at}</div></div>
+    <div style="display:flex;gap:6px"><button class="btn small" data-load="${i}">載入診斷</button>
+    <button class="btn small" data-del="${i}" style="${pendingDel===i?"color:#fff;background:var(--bad);border-color:var(--bad)":""}">${pendingDel===i?"確定刪除":"刪除"}</button></div></div>`).join("");
+}
+$("#rec-list").addEventListener("click",e=>{
+  const l=e.target.dataset.load, d=e.target.dataset.del;
+  if(l!=null){const r=loadRecs()[+l];writeForm("m",r.m);writeForm("f",r.f);showTab("diag");run();}
+  if(d!=null){if(pendingDel===+d){const a=loadRecs();a.splice(+d,1);saveRecs(a);pendingDel=null}else pendingDel=+d;renderRecs();}
+});
+$("#save").onclick=()=>{
+  const m=readForm("m"),f=readForm("f");
+  try{chart(m);chart(f)}catch(e){$("#msg").textContent=e.message;return}
+  const a=loadRecs(); const now=new Date();
+  a.unshift({m,f,total:last&&JSON.stringify(last.m)===JSON.stringify(m)&&JSON.stringify(last.f)===JSON.stringify(f)?last.total:null,at:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`});
+  $("#msg").textContent=saveRecs(a.slice(0,50))?`已保存「${m.name||"男方"} × ${f.name||"女方"}」，可到「保存記錄」查看。`:"這個瀏覽器不允許儲存資料，無法保存記錄。";
+};
+
+/* ---------- 分頁 ---------- */
+function showTab(t){document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
+  ["diag","conv","recs"].forEach(k=>$("#tab-"+k).hidden=k!==t); if(t==="recs"){pendingDel=null;renderRecs()}}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+/* ---------- 農曆換算 ---------- */
+$("#cv-y").innerHTML=opts(1921,2060,2026);$("#cv-m").innerHTML=opts(1,12,10);$("#cv-d").innerHTML=opts(1,31,12);
+let dir="s2l";
+document.querySelectorAll("#conv-dir button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#conv-dir button").forEach(x=>x.setAttribute("aria-pressed",x===b));dir=b.dataset.v;$("#cv-leap-wrap").hidden=dir!=="l2s";$("#cv-out").textContent=""});
+$("#cv-go").onclick=()=>{
+  const y=+$("#cv-y").value,m=+$("#cv-m").value,d=+$("#cv-d").value,out=$("#cv-out");
+  if(!L){out.textContent="曆法程式庫載入失敗，請重新整理頁面。";return}
+  try{
+    if(dir==="s2l"){const t=new Date(y,m-1,d);if(t.getMonth()!==m-1)throw new Error(`國曆 ${y}/${m} 沒有 ${d} 日`);
+      const lu=L.Solar.fromYmd(y,m,d).getLunar(),lm=lu.getMonth();
+      out.innerHTML=`國曆 ${y}年${m}月${d}日 ＝ 農曆 ${lu.getYearInGanZhi()}年（屬${SX[ZHI.indexOf(lu.getYearZhi())]}） ${lm<0?"閏":""}${LMN[Math.abs(lm)-1]}月${LDN(lu.getDay())}`;}
+    else{const leap=$("#cv-leap").checked,lu=L.Lunar.fromYmd(y,leap?-m:m,d);
+      if(leap&&lu.getMonth()>0)throw new Error(`農曆 ${y} 年沒有閏${LMN[m-1]}月`);
+      const s=lu.getSolar();out.innerHTML=`農曆 ${y}年 ${leap?"閏":""}${LMN[m-1]}月${LDN(d)} ＝ 國曆 ${s.getYear()}年${s.getMonth()}月${s.getDay()}日（星期${"日一二三四五六"[s.getWeek()]}）`;}
+  }catch(e){out.textContent=/[\u4e00-\u9fff]/.test(e.message)?e.message:"這個農曆日期不存在（該年可能沒有這個閏月，或該月只有 29 天）。"}
+};
+
+/* ---------- 初始化（範例資料） ---------- */
+buildCard("m","男生",{name:"王志明",y:1992,m:3,d:15,h:9,mi:30,blood:"O"});
+buildCard("f","女生",{name:"林雅婷",y:1994,m:8,d:22,h:20,mi:10,blood:"A"});
+$("#go").onclick=run;
+if(L){preview("m");preview("f");run();window.scrollTo(0,0)}else $("#msg").textContent="曆法程式庫載入失敗，請重新整理頁面。";
+})();
+</script>
+
+</body>
+</html>
